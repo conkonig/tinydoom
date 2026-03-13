@@ -1,5 +1,4 @@
 # Ignore everything
-*
 
 # Un-ignore this file
 !.gitignore
@@ -22,8 +21,9 @@
 !gun-shooting-small.gif
 !sounds/
 !sounds/pistol13.wav
+!sounds/PISTOL13.WAV
 !sounds/death.wav
 !sounds/dspodth1.wav
 !sounds/dpistol.wav
-!sounds/injury.wav
+!sounds/injured.wav
 !thumbnail.jpg
