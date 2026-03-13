@@ -912,3 +912,5 @@ You went from a minimal raycaster to a small Doom-like game by adding:
 8. **Player damage** – HP, damage flash, death screen, enemy attacks hurting the player.
 
 You can extend from here: more levels, more weapons, different enemy types, pickups, or a proper game loop with menus and restart. Have fun building your tiny Doom.
+
+Fork and contribute!

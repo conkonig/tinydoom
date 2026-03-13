@@ -41,7 +41,9 @@ The goal? Prove that with imagination and tight code, you can still build impres
 
 I wrote a step-by-step tutorial explaining how the raycasting works, how the code is structured, and key optimization tricks:
 
-→ **[Read the Tutorial](tutorial.md)**
+→ **[Read the Tutorial here..](tutorial.md)**
+
+→ **[Read the Tutorial on my blog...](https://conologue.com/stories/tinydoom-build-your-own-2-5d-throwback-in-canvas-js/)**
 
 ### Contributing
 
