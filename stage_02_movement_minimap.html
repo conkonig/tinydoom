@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tiny Doom - Stage 2: Movement & Minimap</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: grid;
+      place-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: monospace;
+    }
+
+    canvas {
+      border: 2px solid #333;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="800" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    const map = [
+      "111111111111",
+      "100000000001",
+      "101111011101",
+      "100001000001",
+      "101101110101",
+      "100100010001",
+      "101111011101",
+      "100000000001",
+      "111111111111"
+    ];
+
+    const MAP_W = map[0].length;
+    const MAP_H = map.length;
+    const TILE = 64;
+
+    const player = {
+      x: 1.5,
+      y: 1.5,
+      angle: 0,
+      moveSpeed: 0.045,
+      rotSpeed: 0.035
+    };
+
+    const FOV = Math.PI / 3;
+    const MAX_DEPTH = 20;
+    const keys = {};
+
+    addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+    addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+    function isWall(x, y) {
+      const mx = Math.floor(x);
+      const my = Math.floor(y);
+      return map[my]?.[mx] === "1";
+    }
+
+    function tryMove(nx, ny) {
+      if (!isWall(nx, player.y)) player.x = nx;
+      if (!isWall(player.x, ny)) player.y = ny;
+    }
+
+    function updatePlayer() {
+      if (keys["a"]) player.angle -= player.rotSpeed;
+      if (keys["d"]) player.angle += player.rotSpeed;
+
+      const cos = Math.cos(player.angle);
+      const sin = Math.sin(player.angle);
+
+      if (keys["w"]) {
+        tryMove(
+          player.x + cos * player.moveSpeed,
+          player.y + sin * player.moveSpeed
+        );
+      }
+
+      if (keys["s"]) {
+        tryMove(
+          player.x - cos * player.moveSpeed,
+          player.y - sin * player.moveSpeed
+        );
+      }
+
+      // strafe
+      if (keys["q"]) {
+        tryMove(
+          player.x + Math.cos(player.angle - Math.PI / 2) * player.moveSpeed,
+          player.y + Math.sin(player.angle - Math.PI / 2) * player.moveSpeed
+        );
+      }
+
+      if (keys["e"]) {
+        tryMove(
+          player.x + Math.cos(player.angle + Math.PI / 2) * player.moveSpeed,
+          player.y + Math.sin(player.angle + Math.PI / 2) * player.moveSpeed
+        );
+      }
+    }
+
+    function castRay(rayAngle) {
+      const stepSize = 0.01;
+      let dist = 0;
+      let hitX = 0;
+      let hitY = 0;
+
+      while (dist < MAX_DEPTH) {
+        hitX = player.x + Math.cos(rayAngle) * dist;
+        hitY = player.y + Math.sin(rayAngle) * dist;
+
+        if (isWall(hitX, hitY)) {
+          const cellX = hitX % 1;
+          const cellY = hitY % 1;
+          const edge = Math.min(cellX, 1 - cellX, cellY, 1 - cellY);
+
+          return {
+            dist,
+            hitX,
+            hitY,
+            edge
+          };
+        }
+
+        dist += stepSize;
+      }
+
+      return { dist: MAX_DEPTH, hitX, hitY, edge: 0.5 };
+    }
+
+    function draw3D() {
+      // sky
+      ctx.fillStyle = "#87a7d6";
+      ctx.fillRect(0, 0, W, H / 2);
+
+      // floor
+      ctx.fillStyle = "#2f2f2f";
+      ctx.fillRect(0, H / 2, W, H / 2);
+
+      for (let x = 0; x < W; x += 2){
+
+        const rayAngle = player.angle - FOV / 2 + (x / W) * FOV;
+        const ray = castRay(rayAngle);
+
+        // fisheye correction
+        const correctedDist = ray.dist * Math.cos(rayAngle - player.angle);
+        const wallHeight = Math.min(H, H / Math.max(correctedDist, 0.0001));
+
+        // shading by distance
+        let brightness = 255 - correctedDist * 16;
+
+        // darken edges a bit so walls feel more defined
+        if (ray.edge < 0.03) brightness *= 0.7;
+
+        brightness = Math.max(20, Math.min(255, brightness));
+        const b = brightness | 0;
+
+        ctx.fillStyle = `rgb(${b},${b},${b})`;
+        ctx.fillRect(x, (H - wallHeight) / 2, 2, wallHeight);
+      }
+    }
+
+    function drawMinimap() {
+      const scale = 18;
+      const pad = 10;
+
+      // map background
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(pad - 4, pad - 4, MAP_W * scale + 8, MAP_H * scale + 8);
+
+      // tiles
+      for (let y = 0; y < MAP_H; y++) {
+        for (let x = 0; x < MAP_W; x++) {
+          ctx.fillStyle = map[y][x] === "1" ? "#cfcfcf" : "#222";
+          ctx.fillRect(pad + x * scale, pad + y * scale, scale - 1, scale - 1);
+        }
+      }
+
+      // player
+      const px = pad + player.x * scale;
+      const py = pad + player.y * scale;
+
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // facing line
+      ctx.strokeStyle = "red";
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(
+        px + Math.cos(player.angle) * 16,
+        py + Math.sin(player.angle) * 16
+      );
+      ctx.stroke();
+
+      // a few FOV rays for visual debugging
+      ctx.strokeStyle = "rgba(255,255,0,0.35)";
+      for (let i = 0; i <= 6; i++) {
+        const a = player.angle - FOV / 2 + (i / 6) * FOV;
+        const ray = castRay(a);
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(
+          pad + ray.hitX * scale,
+          pad + ray.hitY * scale
+        );
+        ctx.stroke();
+      }
+    }
+
+    function drawHUD() {
+      ctx.fillStyle = "white";
+      ctx.font = "14px monospace";
+      ctx.fillText("W/S = move | A/D = turn | Q/E = strafe", 10, H - 14);
+    }
+
+    function loop() {
+      updatePlayer();
+      draw3D();
+      drawMinimap();
+      drawHUD();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>

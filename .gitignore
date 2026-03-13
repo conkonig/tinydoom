@@ -1,0 +1,28 @@
+# Ignore everything
+*
+
+# Un-ignore this file
+!.gitignore
+
+# Code
+!*.html
+!*.js
+!*.css
+!*.ts
+!*.tsx
+!*.json
+
+# Markdown
+!*.md
+
+# Game assets (used by final game)
+!wall.png
+!doom_sprites.png
+!gun-idle-small.png
+!gun-shooting-small.gif
+!sounds/
+!sounds/pistol13.wav
+!sounds/death.wav
+!sounds/dspodth1.wav
+!sounds/dpistol.wav
+!sounds/injury.wav
